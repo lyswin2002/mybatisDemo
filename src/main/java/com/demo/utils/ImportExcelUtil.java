@@ -14,7 +14,9 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author 廖永生
@@ -31,9 +33,9 @@ public class ImportExcelUtil {
      * @return
      * @throws IOException
      */
-    public  List<List<Object>> getBankListByExcel(InputStream in, String fileName) throws Exception{
+    public  List<Map<String,Object>> getBankListByExcel(InputStream in, String fileName,String[] title) throws Exception{
 
-        List<List<Object>> list = null;
+        List<Map<String,Object>> list = null;
 
         //创建Excel工作薄
         Workbook work = this.getWorkbook(in,fileName);
@@ -44,32 +46,67 @@ public class ImportExcelUtil {
         Row row = null;
         Cell cell = null;
 
-        list = new ArrayList<List<Object>>();
+        list = new ArrayList();
         //遍历Excel中所有的sheet
         for (int i = 0; i < work.getNumberOfSheets(); i++) {
             sheet = work.getSheetAt(i);
-            if(sheet==null){continue;}
-            int firstCell=0;
-            int lastCell=0;
-            //遍历当前sheet中的所有行
-            for (int j = sheet.getFirstRowNum(); j <=sheet.getLastRowNum(); j++) {
-                row = sheet.getRow(j);
-                if(row==null){continue;}
-                if (row.getFirstCellNum()==j){
-                    firstCell =row.getFirstCellNum();
-                    lastCell = row.getLastCellNum();
-                }
-                //遍历所有的列
-                List<Object> li = new ArrayList<Object>();
-                for (int y = firstCell; y <= lastCell; y++) {
-                    cell = row.getCell(y);
-                    li.add(this.getCellValue(cell));
-                }
-                list.add(li);
-            }
+            list =getSheetData(sheet,title);
+            if (list!=null) break;
         }
         work.close();
         return list;
+    }
+
+    public List<Map<String,Object>> getSheetData(Sheet sheet,String[] title){
+        if(sheet==null) return null;
+        List<Map<String,Object>> sheetData =new ArrayList<Map<String, Object>>();
+        int firstCell=0;
+        int lastCell=0;
+        Row row;
+        Cell cell;
+        //遍历当前sheet中的所有行
+        for (int j = sheet.getFirstRowNum(); j <=sheet.getLastRowNum(); j++) {
+            row = sheet.getRow(j);
+            if(row==null) continue;
+            if (row.getFirstCellNum()==j){
+                firstCell =row.getFirstCellNum();
+                lastCell = row.getLastCellNum();
+                if (checkTitleCell(row,title)==false) {
+                    break;
+                    //throw new Exception("导入文件字段不匹配，请按导入模板格式");
+                }
+                continue;
+            }
+            //遍历所有的列
+            Map<String,Object> li = new HashMap();
+            for (int y = firstCell; y < lastCell; y++) {
+                cell = row.getCell(y);
+                li.put(title[y-firstCell],this.getCellValue(cell));
+            }
+            sheetData.add(li);
+        }
+        return sheetData;
+    }
+    /**
+     * 检查标题字段是否匹配
+     * @param row
+     * @param title
+     * @return
+     */
+    private boolean checkTitleCell(Row row,String[] title){
+       if (title==null) return true;
+       boolean isOk=true;
+       int firstCell =row.getFirstCellNum();
+       int lastCell = row.getLastCellNum();
+       for (int y = firstCell; y < lastCell; y++) {
+            Cell cell = row.getCell(y);
+            if (((String)this.getCellValue(cell)).equalsIgnoreCase(title[y-firstCell])){
+                continue;
+            }else{
+                isOk=false;break;
+            }
+       }
+       return isOk;
     }
 
     /**

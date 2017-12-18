@@ -5,7 +5,6 @@ package com.demo.controller;/**
 import com.demo.utils.ExportExcel;
 import com.demo.utils.ImportExcelUtil;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,7 +56,8 @@ public class ExcelController {
             throw new Exception("文件不存在！");
         }
         in = file.getInputStream();
-        listob = new ImportExcelUtil().getBankListByExcel(in,file.getOriginalFilename());
+        listob = new ImportExcelUtil().getBankListByExcel(in,file.getOriginalFilename(),
+                            new String[]{"虚拟账户号","商户存管交易帐号","用户类型","开户日期","真实姓名","身份证号","手机号","认证状态"});
         in.close();
 
         //该处可调用service相应方法进行数据保存到数据库中，现只对数据输出
@@ -65,10 +65,11 @@ public class ExcelController {
         for(List row :listob){
             int i=0;
             System.out.println("第"+j+"行：");
-
+            j++;
             for(Object obj:row){
 
                 System.out.print("i="+obj.toString()+",");
+                i++;
             }
 
         }
@@ -97,7 +98,7 @@ public class ExcelController {
         }
 
         in = file.getInputStream();
-        listob = new ImportExcelUtil().getBankListByExcel(in,file.getOriginalFilename());
+        listob = new ImportExcelUtil().getBankListByExcel(in,file.getOriginalFilename(),null);
 
         //该处可调用service相应方法进行数据保存到数据库中，现只对数据输出
 
